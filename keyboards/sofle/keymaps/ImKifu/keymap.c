@@ -2,16 +2,15 @@
 
 enum sofle_layers {
     /* _M_XYZ = Mac Os, _W_XYZ = Win/Linux */
-    _QWERTY,
     _COLEMAK,
+    _QWERTY,
     _LOWER,
     _RAISE,
-    _ADJUST,
 };
 
 enum custom_keycodes {
-    KC_QWERTY = SAFE_RANGE,
-    KC_COLEMAK,
+    KC_COLEMAK = SAFE_RANGE,
+    KC_QWERTY,
     KC_PRVWD,
     KC_NXTWD,
     KC_LSTRT,
@@ -19,148 +18,184 @@ enum custom_keycodes {
     KC_DLINE
 };
 
+// Define a type for as many tap dance states as you need
+typedef enum {
+    TD_NONE,
+    TD_UNKNOWN,
+    TD_SINGLE_TAP,
+    TD_SINGLE_HOLD,
+    /*
+    TD_DOUBLE_TAP,
+    TD_DOUBLE_HOLD,
+    TD_DOUBLE_SINGLE_TAP, // Send two single taps
+    TD_TRIPLE_TAP,
+    TD_TRIPLE_HOLD,
+    TD_TRIPLE_SINGLE_TAP, // Send three single taps
+    */
+} td_state_t;
+
+typedef struct {
+    bool is_press_action;
+    td_state_t state;
+} td_tap_t;
+
+enum tap_dance_codes {
+    Q_ESC = 0,
+    SCLN,
+    //J_CW, 
+    BSPC_LAYR,
+    LPRN_LABK,
+    RPRN_RABK,
+    GRV_TILD,
+};
+
+// Function associated with all tap dances
+td_state_t cur_dance(tap_dance_state_t *state);
+
+// Functions associated with individual tap dances
+void bl_finished(tap_dance_state_t *state, void *user_data);
+void bl_reset(tap_dance_state_t *state, void *user_data);
+void dance_jcw_finished(tap_dance_state_t *state, void *user_data);
+void dance_jcw_reset (tap_dance_state_t *state, void *user_data);
+
+#ifdef ENCODER_MAP_ENABLE
+const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
+    [0] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU),           ENCODER_CCW_CW(KC_PGDN, KC_PGUP) },
+    [1] = { ENCODER_CCW_CW(_______, _______),           ENCODER_CCW_CW(_______, _______) },
+    [2] = { ENCODER_CCW_CW(RGB_HUD, RGB_HUI),           ENCODER_CCW_CW(RGB_SAD, RGB_SAI) },
+    [3] = { ENCODER_CCW_CW(RGB_VAD, RGB_VAI),           ENCODER_CCW_CW(RGB_RMOD, RGB_MOD)}
+};
+#endif
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /*
- * QWERTY
- * ,-----------------------------------------.                    ,-----------------------------------------.
- * |  `   |   1  |   2  |   3  |   4  |   5  |                    |   6  |   7  |   8  |   9  |   0  |  `   |
- * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | ESC  |   Q  |   W  |   E  |   R  |   T  |                    |   Y  |   U  |   I  |   O  |   P  | Bspc |
- * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | Tab  |   A  |   S  |   D  |   F  |   G  |-------.    ,-------|   H  |   J  |   K  |   L  |   ;  |  '   |
- * |------+------+------+------+------+------|  MUTE |    |       |------+------+------+------+------+------|
- * |LShift|   Z  |   X  |   C  |   V  |   B  |-------|    |-------|   N  |   M  |   ,  |   .  |   /  |RShift|
- * `-----------------------------------------/       /     \      \-----------------------------------------'
- *            | LGUI | LAlt | LCTR |LOWER | /Enter  /       \Space \  |RAISE | RCTR | RAlt | RGUI |
- *            |      |      |      |      |/       /         \      \ |      |      |      |      |
- *            `----------------------------------'           '------''---------------------------'
- */
-
-[_QWERTY] = LAYOUT(
-  KC_GRV,   KC_1,   KC_2,    KC_3,    KC_4,    KC_5,                     KC_6,    KC_7,    KC_8,    KC_9,    KC_0,  KC_GRV,
-  KC_ESC,   KC_Q,   KC_W,    KC_E,    KC_R,    KC_T,                     KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,  KC_BSPC,
-  KC_TAB,   KC_A,   KC_S,    KC_D,    KC_F,    KC_G,                     KC_H,    KC_J,    KC_K,    KC_L, KC_SCLN,  KC_QUOT,
-  KC_LSFT,  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_MUTE,     XXXXXXX,KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH,  KC_RSFT,
-                 KC_LGUI,KC_LALT,KC_LCTL, MO(_LOWER), KC_ENT,      KC_SPC,  MO(_RAISE), KC_RCTL, KC_RALT, KC_RGUI
-),
-/*
  * COLEMAK
  * ,-----------------------------------------.                    ,-----------------------------------------.
- * |  `   |   1  |   2  |   3  |   4  |   5  |                    |   6  |   7  |   8  |   9  |   0  |  `   |
+ * |      |      |      |      |      |      |                    |      |      |      |      |      |      |
  * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | ESC  |   Q  |   W  |   F  |   P  |   G  |                    |   J  |   L  |   U  |   Y  |   ;  | Bspc |
+ * |      |   Q  |   W  |   F  |   P  |   B  |                    |   J  |   L  |   U  |   Y  |   ;  |      |
  * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | TAB  |   A  |   R  |   S  |   T  |   D  |-------.    ,-------|   H  |   N  |   E  |   I  |   O  |  '   |
- * |------+------+------+------+------+------|  MUTE |    |       |------+------+------+------+------+------|
- * |LShift|   Z  |   X  |   C  |   V  |   B  |-------|    |-------|   K  |   M  |   ,  |   .  |   /  |RShift|
+ * |      |   A  |   R  |   S  |   T  |   G  |-------.    ,-------|   M  |   N  |   E  |   I  |   O  |      |
+ * |------+------+------+------+------+------|  MUTE |    | MACWN |------+------+------+------+------+------|
+ * |      |   Z  |   X  |   C  |   D  |   V  |-------|    |-------|   K  |   H  |   ,  |   .  |   /  |      |
  * `-----------------------------------------/       /     \      \-----------------------------------------'
- *            | LGUI | LAlt | LCTR |LOWER | /Enter  /       \Space \  |RAISE | RCTR | RAlt | RGUI |
+ *            |      |      |      |LOWER | / Enter /       \Space \  |RAISE |      |      |      |
  *            |      |      |      |      |/       /         \      \ |      |      |      |      |
- *            `----------------------------------'           '------''---------------------------'
+ *             `----------------------------------'           '------''---------------------------'
  */
-
 [_COLEMAK] = LAYOUT(
-  KC_GRV,   KC_1,   KC_2,    KC_3,    KC_4,    KC_5,                      KC_6,    KC_7,    KC_8,    KC_9,    KC_0,  KC_GRV,
-  KC_ESC,   KC_Q,   KC_W,    KC_F,    KC_P,    KC_G,                      KC_J,    KC_L,    KC_U,    KC_Y, KC_SCLN,  KC_BSPC,
-  KC_TAB,   KC_A,   KC_R,    KC_S,    KC_T,    KC_D,                      KC_H,    KC_N,    KC_E,    KC_I,    KC_O,  KC_QUOT,
-  KC_LSFT,  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_MUTE,      XXXXXXX,KC_K,    KC_M, KC_COMM,  KC_DOT, KC_SLSH,  KC_RSFT,
-                 KC_LGUI,KC_LALT,KC_LCTL,MO(_LOWER), KC_ENT,        KC_SPC,  MO(_RAISE), KC_RCTL, KC_RALT, KC_RGUI
+  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,                             KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+  KC_NO,   TD(Q_ESC), KC_W, KC_F,    KC_P,    KC_B,                               KC_J,    KC_L,    KC_U,    KC_Y,    TD(SCLN),KC_NO,  
+  KC_NO,   KC_A,   KC_R,    KC_S,    KC_T,    KC_G,                               KC_M,    KC_N,    KC_E,    KC_I,    KC_O,    KC_NO,  
+  KC_NO,   MT(MOD_LSFT, KC_Z), KC_X, KC_C,    KC_D, KC_V,  KC_MUTE,     CG_TOGG,  KC_K,    KC_H,    KC_COMM, KC_DOT,  MT(MOD_LSFT, KC_SLSH), KC_NO,  
+           KC_QWERTY, KC_NO,   KC_NO,   LT(2, KC_TAB), MT(MOD_LCTL, KC_ENT), KC_SPC, TD(BSPC_LAYR), KC_NO,   KC_NO,   KC_NO
+),
+/*
+ * QWERTY
+ * ,-----------------------------------------.                    ,-----------------------------------------.
+ * | ESC  |   5  |   1  |   2  |   3  |   4  |                    |      |      |      |      |      |      |
+ * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
+ * |   P  |   J  |   Q  |   W  |   E  |   R  |                    |      |   7  |   8  |   9  |      |      |
+ * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
+ * |   G  |   T  |   A  |   S  |   D  |   F  |-------.    ,-------|      |   4  |   5  |   6  |      |      |
+ * |------+------+------+------+------+------|  MUTE |    |       |------+------+------+------+------+------|
+ * |   M  | LCTR |   Z  |   X  |   C  |   V  |-------|    |-------|   0  |   1  |   2  |   3  |      |      |
+ * `-----------------------------------------/       /     \      \-----------------------------------------'
+ *            | CLMK | WIN  |   L  | Tab  | / Space /       \      \  |RAISE | RCTR | RAlt | RGUI |
+ *            |      |      |      |      |/       /         \      \ |      |      |      |      |
+ *             `----------------------------------'           '------''---------------------------'
+ */
+[_QWERTY] = LAYOUT(
+  KC_ESC,  KC_5,    KC_1,    KC_2,    KC_3,    KC_4,                              KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+  KC_P  ,  KC_J,    KC_Q,    KC_W,    KC_E,    KC_R,                              KC_NO,   KC_7,    KC_8,    KC_9,    KC_NO,   KC_NO,  
+  KC_G,    KC_T,    KC_A,    KC_S,    KC_D,    KC_F,                              KC_NO,   KC_4,    KC_5,    KC_6,    KC_NO,   KC_NO,  
+  KC_M,    KC_LCTL, KC_Z,    KC_X,    KC_C,    KC_V,     KC_MUTE,       KC_NO,    KC_0,    KC_1,    KC_2,    KC_3,    KC_NO,   KC_NO,  
+                    KC_COLEMAK, KC_LGUI, KC_ENT, KC_TAB, KC_SPC,         KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO
 ),
 /* LOWER
  * ,-----------------------------------------.                    ,-----------------------------------------.
- * |      |  F1  |  F2  |  F3  |  F4  |  F5  |                    |  F6  |  F7  |  F8  |  F9  | F10  | F11  |
+ * |      |      |      |      |      |      |                    |      |      |      |      |      |      |
  * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * |  `   |   1  |   2  |   3  |   4  |   5  |                    |   6  |   7  |   8  |   9  |   0  | F12  |
+ * |      |   $  |  (<  |  >)  |   '  |   +  |                    |   *  |   7  |   8  |   9  |   %  |      |
  * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | Tab  |   !  |   @  |   #  |   $  |   %  |-------.    ,-------|   ^  |   &  |   *  |   (  |   )  |   |  |
- * |------+------+------+------+------+------|  MUTE |    |       |------+------+------+------+------+------|
- * | Shift|  =   |  -   |  +   |   {  |   }  |-------|    |-------|   [  |   ]  |   ;  |   :  |   \  | Shift|
+ * |      |   @  |   {  |  }   |   "  |   =  |-------.    ,-------|   !  |   4  |   5  |   6  |   ^  |      |
+ * |------+------+------+------+------+------|       |    |       |------+------+------+------+------+------|
+ * |      |   #  |   [  |  ]   |   |  |   &  |-------|    |-------|   0  |   1  |   2  |   3  |   \  |      |
  * `-----------------------------------------/       /     \      \-----------------------------------------'
- *            | LGUI | LAlt | LCTR |LOWER | /Enter  /       \Space \  |RAISE | RCTR | RAlt | RGUI |
+ *            |      |      |      |LOWER | /  ~`   /       \   _  \  |   -  |      |      |      |
  *            |      |      |      |      |/       /         \      \ |      |      |      |      |
- *            `----------------------------------'           '------''---------------------------'
+ *             `----------------------------------'           '------''---------------------------'
  */
 [_LOWER] = LAYOUT(
-  _______,   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,                       KC_F6,   KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,
-  KC_GRV,    KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                       KC_6,    KC_7,    KC_8,    KC_9,    KC_0,  KC_F12,
-  _______, KC_EXLM,   KC_AT, KC_HASH,  KC_DLR, KC_PERC,                       KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, KC_PIPE,
-  _______,  KC_EQL, KC_MINS, KC_PLUS, KC_LCBR, KC_RCBR, _______,       _______, KC_LBRC, KC_RBRC, KC_SCLN, KC_COLN, KC_BSLS, _______,
-                       _______, _______, _______, _______, _______,       _______, _______, _______, _______, _______
+  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,                             KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+  KC_NO,   KC_DLR,  TD(LPRN_LABK), TD(RPRN_RABK), KC_QUOT, KC_PLUS,               KC_ASTR, KC_7,    KC_8,    KC_9,    KC_PERC, KC_NO,  
+  KC_NO,   KC_AT,   KC_LCBR, KC_RCBR, KC_DQUO, KC_EQL,                            KC_EXLM, KC_4,    KC_5,    KC_6,    KC_CIRC, KC_NO,  
+  KC_NO,   KC_HASH, KC_LBRC, KC_RBRC, KC_PIPE, KC_AMPR,  KC_NO,         KC_NO,    KC_0   , KC_1,    KC_2,    KC_3,    KC_BSLS, KC_NO,  
+                    KC_NO,   KC_NO,   KC_NO,   KC_NO,   TD(GRV_TILD),    KC_UNDS, KC_MINS, KC_NO,   KC_NO,   KC_NO
 ),
 /* RAISE
- * ,----------------------------------------.                    ,-----------------------------------------.
+ * ,----------------------------------------.                     ,-----------------------------------------.
  * |      |      |      |      |      |      |                    |      |      |      |      |      |      |
  * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | Esc  | Ins  | Pscr | Menu |      |      |                    |      | PWrd |  Up  | NWrd | DLine| Bspc |
+ * |      |      | F10  |  F7  |  F4  |  F1  |                    | PGUP | PWrd |  Up  | NWrd |      |      |
  * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | Tab  | LAt  | LCtl |LShift|      | Caps |-------.    ,-------|      | Left | Down | Rigth|  Del | Bspc |
- * |------+------+------+------+------+------|  MUTE  |    |       |------+------+------+------+------+------|
- * |Shift | Undo |  Cut | Copy | Paste|      |-------|    |-------|      | LStr |      | LEnd |      | Shift|
+ * |      |      | F11  |  F8  |  F5  |  F2  |-------.    ,-------| PGDN | Left | Down | Rigth|      |      |
+ * |------+------+------+------+------+------|       |    |       |------+------+------+------+------+------|
+ * |      |      | F12  |  F9  |  F6  |  F3  |-------|    |-------|      | LStr |      | LEnd |      |      |
  * `-----------------------------------------/       /     \      \-----------------------------------------'
- *            | LGUI | LAlt | LCTR |LOWER | /Enter  /       \Space \  |RAISE | RCTR | RAlt | RGUI |
+ *            |      |      |      |CtrlWN| /       /       \      \  | RAISE|      |      |      |
  *            |      |      |      |      |/       /         \      \ |      |      |      |      |
- *            `----------------------------------'           '------''---------------------------'
+ *             `----------------------------------'           '------''---------------------------'
  */
 [_RAISE] = LAYOUT(
-  _______, _______ , _______ , _______ , _______ , _______,                           _______,  _______  , _______,  _______ ,  _______ ,_______,
-  _______,  KC_INS,  KC_PSCR,   KC_APP,  XXXXXXX, XXXXXXX,                        KC_PGUP, KC_PRVWD,   KC_UP, KC_NXTWD,KC_DLINE, KC_BSPC,
-  _______, KC_LALT,  KC_LCTL,  KC_LSFT,  XXXXXXX, KC_CAPS,                       KC_PGDN,  KC_LEFT, KC_DOWN, KC_RGHT,  KC_DEL, KC_BSPC,
-  _______,KC_UNDO, KC_CUT, KC_COPY, KC_PASTE, XXXXXXX,  _______,       _______,  XXXXXXX, KC_LSTRT, XXXXXXX, KC_LEND,   XXXXXXX, _______,
-                         _______, _______, _______, _______, _______,       _______, _______, _______, _______, _______
+  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,                             KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+  KC_NO,   KC_NO,   KC_F10,  KC_F7,   KC_F4,   KC_F1,                             KC_PGUP, KC_PRVWD,  KC_UP, KC_NXTWD,KC_NO,   KC_NO,  
+  KC_NO,   KC_NO,   KC_F11,  KC_F8,   KC_F5,   KC_F2,                             KC_PGDN, KC_LEFT, KC_DOWN, KC_RGHT, KC_NO,   KC_NO,  
+  KC_NO,   KC_NO,   KC_F12,  KC_F9,   KC_F6,   KC_F3,  KC_NO,           KC_NO,    KC_NO,   KC_LSTRT,KC_NO,   KC_LEND, KC_NO,   KC_NO,  
+                    KC_NO,   KC_NO,   KC_NO, MT(MOD_LCTL | MOD_LGUI, KC_NO), KC_NO,           KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO
 ),
-/* ADJUST
- * ,-----------------------------------------.                    ,-----------------------------------------.
- * |      |      |      |      |      |      |                    |      |      |      |      |      |      |
- * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | QK_BOOT|      |QWERTY|COLEMAK|      |      |                    |      |      |      |      |      |      |
- * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * |      |      |MACWIN|      |      |      |-------.    ,-------|      | VOLDO| MUTE | VOLUP|      |      |
- * |------+------+------+------+------+------|  MUTE |    |       |------+------+------+------+------+------|
- * |      |      |      |      |      |      |-------|    |-------|      | PREV | PLAY | NEXT |      |      |
- * `-----------------------------------------/       /     \      \-----------------------------------------'
- *            | LGUI | LAlt | LCTR |LOWER | /Enter  /       \Space \  |RAISE | RCTR | RAlt | RGUI |
- *            |      |      |      |      |/       /         \      \ |      |      |      |      |
- *            `----------------------------------'           '------''---------------------------'
- */
-  [_ADJUST] = LAYOUT(
-  XXXXXXX , XXXXXXX,  XXXXXXX ,  XXXXXXX , XXXXXXX, XXXXXXX,                     XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
-  QK_BOOT  , XXXXXXX,KC_QWERTY,KC_COLEMAK,CG_TOGG,XXXXXXX,                     XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
-  XXXXXXX , XXXXXXX,CG_TOGG, XXXXXXX,    XXXXXXX,  XXXXXXX,                     XXXXXXX, KC_VOLD, KC_MUTE, KC_VOLU, XXXXXXX, XXXXXXX,
-  XXXXXXX , XXXXXXX, XXXXXXX, XXXXXXX,    XXXXXXX,  XXXXXXX, XXXXXXX,     XXXXXXX, XXXXXXX, KC_MPRV, KC_MPLY, KC_MNXT, XXXXXXX, XXXXXXX,
-                   _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
-  )
 };
 
 #ifdef OLED_ENABLE
-
+/*
 static void render_logo(void) {
-    static const char PROGMEM qmk_logo[] = {
-        0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,0x91,0x92,0x93,0x94,
-        0xa0,0xa1,0xa2,0xa3,0xa4,0xa5,0xa6,0xa7,0xa8,0xa9,0xaa,0xab,0xac,0xad,0xae,0xaf,0xb0,0xb1,0xb2,0xb3,0xb4,
-        0xc0,0xc1,0xc2,0xc3,0xc4,0xc5,0xc6,0xc7,0xc8,0xc9,0xca,0xcb,0xcc,0xcd,0xce,0xcf,0xd0,0xd1,0xd2,0xd3,0xd4,0
+    static const char PROGMEM raw_logo[] = {
+        0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,128,128,128,  0,  0,  0,192,224,240,240,240,240,240,240,240,224,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,112,112,112,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,  0,  0,  0,  0,128,192,224,240,  0,  0,240,252,254,255,255,255,  1,240,252,255,255,255,255,255,255,255,255,127, 31,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,254,254,254,  0,  0,240,248,252, 30, 14, 14, 14, 14, 14, 14, 30,252,248,240,  0,  0,254,254,252, 28, 14, 14, 14, 14,  0,  0,254,254,252, 28, 14, 14, 14, 14, 30,252,248,240,  0,  0,240,248,252,222,206,206,206,206,206,206,222,252,248,240,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
+        0,  0,  0,  0,  0,  0,  0,  0,  0, 63,255,255,255,254,240,255,255,255,255,255,255,248,255,255,255,255,255,255,255,255,255,193,128,128,128,192,240,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,128,255,255,255,  0,  0, 15, 31, 63,120,112,112,112,112,112,112,120, 63, 31, 15,  0,  0,127,127,127,  0,  0,  0,  0,  0,  0,  0,127,127,127,  0,  0,  0,  0,  0,  0,127,127,127,  0,  0, 15, 31, 63,121,113,113,113,113,113,113,121, 61, 29, 13,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
+        0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  3,  3,  3,  3,  1,  1,  3,  3,  7,  7,  7,  3,  3,  1,  3,  7,  7,  7,  7,  7,  7,  7,  3,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  7,  7,  7,  7,  7,  7,  7,  7,  3,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
     };
-
-    oled_write_P(qmk_logo, false);
+    oled_write_raw_P(raw_logo, sizeof(raw_logo));
 }
+*/
+static void render_logo(void) {
+    static const char PROGMEM raw_logo[] = {
+        0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,  0,  0,  0,  0,252,254,255, 15,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  0,  0,  0,  0,  0,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,255,255,255,  7,  7,  7,  7,  7,  7,  7,  7,255,255,255,  0,  0,  0,  0,  0,255,255,255,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,255,255,255,  0,  0,  0,  0,  0,  7,  7,  7,  7,135,199,231,247,255,127, 63, 31, 15, 31, 63,127,247,231,199,135,  7,  7,  7,  7,  0,  0,  0,  0,  0,  0,  0,  0, 
+        0,  0,  0,  0,  0,  0,  0,  0,  0, 31, 63,127,120,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 15, 15, 15,  0,  0,  0,  0,  0,  0,  0,  0,127,127,127,  0,  0,  0,  0,  0,  7,  7,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  7,  7,  7,  0,  0,  0,  0,  0,248,124, 62, 31, 15,  7,  3,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  3,  7, 15, 30, 60,120,  0,  0,  0,  0,  0,  0,  0,  0, 
+        0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+    };
+    oled_write_raw_P(raw_logo, sizeof(raw_logo));
+}
+
 
 static void print_status_narrow(void) {
     // Print current mode
-    oled_write_P(PSTR("\n\n"), false);
+    //oled_write_P(PSTR("\n\n"), false);
     oled_write_ln_P(PSTR("MODE"), false);
     oled_write_ln_P(PSTR(""), false);
     if (keymap_config.swap_lctl_lgui) {
-        oled_write_ln_P(PSTR("MAC"), false);
+        oled_write_ln_P(PSTR("Mac"), false);
     } else {
-        oled_write_ln_P(PSTR("WIN"), false);
+        oled_write_ln_P(PSTR("Win"), false);
     }
-
+    oled_write_P(PSTR("\n\n"), false);
     switch (get_highest_layer(default_layer_state)) {
-        case _QWERTY:
-            oled_write_ln_P(PSTR("Qwrt"), false);
-            break;
         case _COLEMAK:
-            oled_write_ln_P(PSTR("Clmk"), false);
+            oled_write_ln_P(PSTR("KIFU"), false);
+            break;
+        case _QWERTY:
+            oled_write_ln_P(PSTR("GAME"), true);
             break;
         default:
             oled_write_P(PSTR("Undef"), false);
@@ -169,8 +204,8 @@ static void print_status_narrow(void) {
     // Print current layer
     oled_write_ln_P(PSTR("LAYER"), false);
     switch (get_highest_layer(layer_state)) {
-        case _COLEMAK:
         case _QWERTY:
+        case _COLEMAK:
             oled_write_P(PSTR("Base\n"), false);
             break;
         case _RAISE:
@@ -178,9 +213,6 @@ static void print_status_narrow(void) {
             break;
         case _LOWER:
             oled_write_P(PSTR("Lower"), false);
-            break;
-        case _ADJUST:
-            oled_write_P(PSTR("Adj\n"), false);
             break;
         default:
             oled_write_ln_P(PSTR("Undef"), false);
@@ -205,12 +237,7 @@ bool oled_task_user(void) {
     }
     return false;
 }
-
 #endif
-
-layer_state_t layer_state_set_user(layer_state_t state) {
-    return update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);
-}
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
@@ -348,23 +375,173 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-#ifdef ENCODER_ENABLE
+/*
+    * Custom Macros
+    * Check here to generate your own macros: https://codepen.io/mvaneijgen/full/LYEVQXp
+*/
+enum combos { 
+  W_F_P_LGUI,
+  L_U_Y_RGUI,
+  A_R_S_LALT,
+  T_A_S_LALT,
+  E_I_O_RALT,
+  R_S_T_DEL,
+  N_E_I_BSPC,
+  
+};
 
-bool encoder_update_user(uint8_t index, bool clockwise) {
-    if (index == 0) {
-        if (clockwise) {
-            tap_code(KC_VOLU);
-        } else {
-            tap_code(KC_VOLD);
-        }
-    } else if (index == 1) {
-        if (clockwise) {
-            tap_code(KC_PGDN);
-        } else {
-            tap_code(KC_PGUP);
-        }
-    }
-    return true;
+const uint16_t PROGMEM w_f_p_lgui[] = { KC_W, KC_F, KC_P, COMBO_END};
+const uint16_t PROGMEM l_u_y_rgui[] = { KC_L, KC_U, KC_Y, COMBO_END};
+const uint16_t PROGMEM a_r_s_lalt[] = { KC_A, KC_R, KC_S, COMBO_END};
+const uint16_t PROGMEM t_a_s_lalt[] = { KC_T, KC_A, KC_S, COMBO_END};
+const uint16_t PROGMEM e_i_o_ralt[] = { KC_E, KC_I, KC_O, COMBO_END};
+const uint16_t PROGMEM r_s_t_del[] = { KC_R, KC_S, KC_T, COMBO_END};
+const uint16_t PROGMEM n_e_i_bspc[] = { KC_N, KC_E, KC_I, COMBO_END};
+
+combo_t key_combos[COMBO_COUNT] = {
+  [W_F_P_LGUI] = COMBO(w_f_p_lgui, KC_LGUI),
+  [L_U_Y_RGUI] = COMBO(l_u_y_rgui, KC_RGUI),
+  [A_R_S_LALT] = COMBO(a_r_s_lalt, KC_LALT),
+  [T_A_S_LALT] = COMBO(t_a_s_lalt, KC_LALT),
+  [E_I_O_RALT] = COMBO(e_i_o_ralt, KC_RALT),
+  [R_S_T_DEL] = COMBO(r_s_t_del, KC_DEL),
+  [N_E_I_BSPC] = COMBO(n_e_i_bspc, KC_BSPC),
+  
+};
+/*
+    End Custom Macros
+*/
+
+
+
+
+/* Return an integer that corresponds to what kind of tap dance should be executed.
+ *
+ * How to figure out tap dance state: interrupted and pressed.
+ *
+ * Interrupted: If the state of a dance is "interrupted", that means that another key has been hit
+ *  under the tapping term. This is typically indicitive that you are trying to "tap" the key.
+ *
+ * Pressed: Whether or not the key is still being pressed. If this value is true, that means the tapping term
+ *  has ended, but the key is still being pressed down. This generally means the key is being "held".
+ *
+ * One thing that is currenlty not possible with qmk software in regards to tap dance is to mimic the "permissive hold"
+ *  feature. In general, advanced tap dances do not work well if they are used with commonly typed letters.
+ *  For example "A". Tap dances are best used on non-letter keys that are not hit while typing letters.
+ *
+ * Good places to put an advanced tap dance:
+ *  z,q,x,j,k,v,b, any function key, home/end, comma, semi-colon
+ *
+ * Criteria for "good placement" of a tap dance key:
+ *  Not a key that is hit frequently in a sentence
+ *  Not a key that is used frequently to double tap, for example 'tab' is often double tapped in a terminal, or
+ *    in a web form. So 'tab' would be a poor choice for a tap dance.
+ *  Letters used in common words as a double. For example 'p' in 'pepper'. If a tap dance function existed on the
+ *    letter 'p', the word 'pepper' would be quite frustating to type.
+ *
+ * For the third point, there does exist the 'TD_DOUBLE_SINGLE_TAP', however this is not fully tested
+ *
+ */
+
+// Determine the current tap dance state
+td_state_t cur_dance(tap_dance_state_t *state) {
+    if (state->count == 1) {
+        if (!state->pressed) return TD_SINGLE_TAP;
+        else return TD_SINGLE_HOLD;
+    } /*else if (state->count == 2) return TD_DOUBLE_TAP;*/
+    else return TD_UNKNOWN;
 }
 
-#endif
+// Initialize tap structure associated with example tap dance key
+static td_tap_t bl_tap_state = {
+    .is_press_action = true,
+    .state = TD_NONE
+};
+
+// Functions that control what our tap dance key does
+
+// Send 'Ctrl Backspace' on Single Tap, 'Raise Layer' on Single Hold, 'Toggle Raise Layer' on Double Tap
+void bl_finished(tap_dance_state_t *state, void *user_data) {
+    bl_tap_state.state = cur_dance(state);
+    switch (bl_tap_state.state) {
+        case TD_UNKNOWN:
+            tap_code16(C(KC_BSPC));
+            break;
+        case TD_SINGLE_TAP:
+            tap_code16(C(KC_BSPC));
+            break;
+        case TD_SINGLE_HOLD:
+            layer_on(_RAISE);
+            break;
+        /*
+        case TD_DOUBLE_TAP:
+            // Check to see if the layer is already set
+            if (layer_state_is(_RAISE)) {
+                // If already set, then switch it off
+                layer_off(_RAISE);
+            } else {
+                // If not already set, then switch the layer on
+                layer_on(_RAISE);
+            }
+            break;
+        */
+        default:
+            break;
+    }
+}
+
+void bl_reset(tap_dance_state_t *state, void *user_data) {
+    // If the key was held down and now is released then switch off the layer
+    if (bl_tap_state.state == TD_SINGLE_HOLD) {
+        layer_off(_RAISE);
+    }
+    bl_tap_state.state = TD_NONE;
+}
+// End send 'Ctrl Backspace' on Single Tap, 'Raise Layer' on Single Hold, 'Toggle Raise Layer' on Double Tap
+
+
+// Send 'J' on Single Tap, 'Caps Word' on Double Tap (currently not working) (issue can be found here: https://github.com/qmk/qmk_firmware/issues/19574)
+/*
+void dance_jcw_finished (tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1) {
+    register_code (KC_J);
+  } else {
+    caps_word_toggle();
+  }
+}
+
+void dance_jcw_reset (tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1) {
+    unregister_code (KC_J);
+  } else {
+    caps_word_toggle();
+  }
+}
+*/
+// End send 'J' on Single Tap, 'Caps Word' on Double Tap
+
+
+
+
+
+// Associate our tap dance key with its functionality
+tap_dance_action_t tap_dance_actions[] = {
+    [Q_ESC] = ACTION_TAP_DANCE_DOUBLE(KC_Q, KC_ESC),
+    [SCLN]  = ACTION_TAP_DANCE_DOUBLE(KC_SCLN, S(KC_SCLN)),
+    //[J_CW]  = ACTION_TAP_DANCE_FN_ADVANCED(NULL, dance_jcw_finished, dance_jcw_reset), // currently not working
+    [BSPC_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, bl_finished, bl_reset),
+    [LPRN_LABK] = ACTION_TAP_DANCE_DOUBLE(KC_LPRN, KC_LABK),
+    [RPRN_RABK] = ACTION_TAP_DANCE_DOUBLE(KC_RPRN, KC_RABK),
+    [GRV_TILD] = ACTION_TAP_DANCE_DOUBLE(KC_GRV, KC_TILD),
+};
+
+// Set a long-ish tapping term for tap-dance keys
+uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case QK_TAP_DANCE ... QK_TAP_DANCE_MAX:
+            return 275;
+        default:
+            return TAPPING_TERM;
+    }
+}
+

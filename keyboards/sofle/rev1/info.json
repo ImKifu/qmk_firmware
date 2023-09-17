@@ -29,7 +29,7 @@
         }
     },
     "tapping": {
-        "term": 100
+        "term": 200
     },
     "qmk": {
         "tap_keycode_delay": 10
